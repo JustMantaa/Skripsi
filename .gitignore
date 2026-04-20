@@ -86,9 +86,6 @@ yolo_lstm/output/*.h5
 yolo_lstm/output/*.pth
 yolo_lstm/output/*.csv
 yolo_lstm/output/*.json
-yolo_lstm/dataset/
-yolo_lstm/before/
-yolo_lstm/trash/
 
 # ============================================================================
 # Logs & Temporary Files
