@@ -389,16 +389,16 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 
 ### Python Packages
 ```
-torch >= 2.0.0
-torchvision >= 0.15.0
-opencv-python >= 4.8.0
-mediapipe >= 0.10.0
-numpy >= 1.24.0
-pandas >= 1.5.0
-scikit-learn >= 1.3.0
-flask >= 2.3.0
-flask-cors >= 4.0.0
-ultralytics >= 8.0.0
+torch
+torchvision
+opencv-python
+mediapipe
+numpy
+pandas
+scikit-learn
+flask
+flask-cors
+ultralytics
 ```
 
 ### PHP Packages (Laravel)
@@ -428,34 +428,9 @@ cd sibi && php artisan test
 
 ---
 
-## 👥 Contributors
-
-- **Developer**: Your Name
-- **Advisor**: [Advisor Name]
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
----
-
-## 📞 Contact & Support
-
-- **Issues**: Create an issue on GitHub
-- **Email**: your.email@example.com
-- **Documentation**: [Full Documentation Link]
-
----
-
 ## 🔗 Useful Links
 
 - [PyTorch Documentation](https://pytorch.org/docs/)
 - [MediaPipe Hand Detection](https://developers.google.com/mediapipe/solutions/vision/hand_landmarker)
 - [YOLO Documentation](https://docs.ultralytics.com/)
 - [Laravel Documentation](https://laravel.com/docs/)
-
----
-
-**Last Updated**: April 2026
