@@ -52,22 +52,45 @@
         object-fit: cover;
         transform: scaleX(-1);
     }
+
+    #video:focus {
+        outline: none;
+    }
+
+    #video-container {
+        position: relative;
+        width: 100%;
+        height: 720px;
+    }
+
+    .video-blocker {
+        position: absolute;
+        inset: 0;
+        z-index: 3;
+        background: transparent;
+        display: none; /* shown when camera active */
+    }
+
+    /* bbox overlay removed - not used */
 </style>
-<div class="container mt-5">
+<div class="container mt-3">
     </div>
     <div class="row mb-4">
         <div class="col-lg-8 mx-auto p-2">
             <div class="card camera-wrapper" id="camera-wrapper">
                 <div class="card-body p-0" style="position: relative;">
                     <div class="camera-status">
-                        Hasil Deteksi: <span id="hasil-deteksi">-</span>
+                        <span id="hasil-deteksi">-</span>
                         <small>Confidence: <span id="hasil-confidence">-</span></small>
                         <small>Mode: <span id="hasil-mode">-</span></small>
                     </div>
                     <div id="camera-placeholder" class="camera-placeholder" aria-hidden="true">
                         <i class="fa-solid fa-video-slash camera-placeholder-icon"></i>
                     </div>
-                    <video id="video" autoplay playsinline></video>
+                    <div id="video-container">
+                        <video id="video" autoplay playsinline></video>
+                        <div id="video-blocker" class="video-blocker" aria-hidden="true"></div>
+                    </div>
                     <div class="d-flex justify-content-center p-3 gap-2">
                         <button id="toggle-camera" class="btn btn-primary">Aktifkan Kamera</button>
                     </div>
@@ -86,15 +109,17 @@
     const canvas = document.createElement('canvas');
 
     const pythonApiBaseUrl = 'http://127.0.0.1:5000';
-    const sendIntervalMs = 120;
-    const sendJpegQuality = 0.55;
-    const processWidth = 416;
-    const processHeight = 416;
+    const sendIntervalMs = 33;
+    const sendJpegQuality = 1;
+    const processWidth = 1280;
+    const processHeight = 720;
 
     let currentStream = null;
     let cameraActive = false;
     let sendTimeoutId = null;
     let isSendingFrame = false;
+    const videoBlocker = document.getElementById('video-blocker');
+
 
     function stopSendingFrames() {
         if (sendTimeoutId) {
@@ -120,9 +145,12 @@
             canvas.width = processWidth;
             canvas.height = processHeight;
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+            ctx.restore();
 
-            const dataUrl = canvas.toDataURL('image/jpeg', sendJpegQuality);
+            const dataUrl = canvas.toDataURL('image/png', sendJpegQuality);
 
             const response = await fetch(`${pythonApiBaseUrl}/predict`, {
                 method: 'POST',
@@ -163,10 +191,22 @@
     toggleBtn.onclick = function() {
         if (!cameraActive) {
             navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } } })
-                .then(stream => {
+                    .then(stream => {
                     video.srcObject = stream;
+                    // prevent browser UI overlay: disable picture-in-picture and native controls
+                    try {
+                        video.disablePictureInPicture = true;
+                        video.removeAttribute('controls');
+                        video.controls = false;
+                    } catch (e) {
+                        // ignore if not supported
+                    }
+                    // prevent right-click context menu on the video
+                    video.addEventListener('contextmenu', (ev) => ev.preventDefault());
                     currentStream = stream;
                     cameraActive = true;
+                    // enable transparent blocker so browser hover UI won't appear
+                    if (videoBlocker) videoBlocker.style.display = 'block';
                     cameraWrapper.classList.add('is-camera-active');
                     toggleBtn.textContent = 'Nonaktifkan Kamera';
                     toggleBtn.classList.remove('btn-primary');
@@ -196,6 +236,7 @@
         }
         cameraActive = false;
         stopSendingFrames();
+        if (videoBlocker) videoBlocker.style.display = 'none';
         cameraWrapper.classList.remove('is-camera-active');
         toggleBtn.textContent = 'Aktifkan Kamera';
         toggleBtn.classList.remove('btn-danger');
@@ -204,5 +245,7 @@
         hasilConfidenceEl.textContent = '-';
         hasilModeEl.textContent = '-';
     };
+
+    // no-op: resize overlay removed when bbox drawing disabled
 </script>
 @endsection
