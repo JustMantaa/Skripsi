@@ -1,126 +1,46 @@
-# ============================================================================
-# Environment & Virtual Environments
-# ============================================================================
+# Python
 .venv/
-.env/
 venv/
-ENV/
-env.local
-.env.local
-.env.*.local
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.log
 
-# ============================================================================
-# IDE & Editor
-# ============================================================================
+# Dependencies (install on deployment)
+yolo_lstm/__pycache__/
+sibi/vendor/
+sibi/node_modules/
+
+# Environment
+.env
+sibi/.env
+
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
+
+# OS
 .DS_Store
 Thumbs.db
-*.sublime-project
-*.sublime-workspace
 
-# ============================================================================
-# Python
-# ============================================================================
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-.pytest_cache/
-.coverage
-.coverage.*
-htmlcov/
-.tox/
-.hypothesis/
-*.cover
-*.ipynb_checkpoints
-.ipynb_checkpoints/
+# Laravel Cache & Logs (generated on runtime)
+sibi/storage/logs/
+sibi/storage/framework/cache/
+sibi/storage/framework/sessions/
+sibi/storage/framework/views/
+sibi/bootstrap/cache/
 
-# ============================================================================
-# Node & Package Manager
-# ============================================================================
-node_modules/
-npm-debug.log
-yarn-error.log
-package-lock.json
-yarn.lock
+# Development/Testing (not needed for deployment)
+yolo_lstm/dataset/
+yolo_lstm/training/
+yolo_lstm/yolo/
+yolo_lstm/debug_incoming/
+yolo_lstm/evidence/
 
-# ============================================================================
-# Laravel/Composer
-# ============================================================================
-/vendor/
-composer.lock
-/storage/logs/
-/storage/framework/cache/
-/storage/framework/sessions/
-/storage/framework/views/
-/bootstrap/cache/
-
-# ============================================================================
-# YOLO LSTM - Model Files & Datasets (LARGE FILES)
-# ============================================================================
-yolo_lstm/output/*.pt
-yolo_lstm/output/*.h5
-yolo_lstm/output/*.pth
-yolo_lstm/output/*.csv
-yolo_lstm/output/*.json
-
-# ============================================================================
-# Logs & Temporary Files
-# ============================================================================
-*.log
-*.pot
-*.mo
-*.log*
-.DS_Store
-._*
-.AppleDouble
-.LSOverride
-
-# ============================================================================
-# OS Specific
-# ============================================================================
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
-*.swp
-*.swo
-
-# Windows
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-
-# Linux
-.directory
-
-# ============================================================================
-# System Files
-# ============================================================================
-.vscode-server/
-.vscode-settings.json
-*.pid
-*.seed
+# Keep these for deployment
+!yolo_lstm/models/
+!yolo_lstm/hand_landmarker.task
+!yolo_lstm/inference_api_v2.py
+!yolo_lstm/requirements_api.txt
