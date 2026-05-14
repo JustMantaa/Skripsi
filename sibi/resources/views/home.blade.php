@@ -63,14 +63,6 @@
         height: 720px;
     }
 
-    .video-blocker {
-        position: absolute;
-        inset: 0;
-        z-index: 3;
-        background: transparent;
-        display: none; /* shown when camera active */
-    }
-
     /* bbox overlay removed - not used */
 </style>
 <div class="container mt-3">
@@ -89,7 +81,6 @@
                     </div>
                     <div id="video-container">
                         <video id="video" autoplay playsinline></video>
-                        <div id="video-blocker" class="video-blocker" aria-hidden="true"></div>
                     </div>
                     <div class="d-flex justify-content-center p-3 gap-2">
                         <button id="toggle-camera" class="btn btn-primary">Aktifkan Kamera</button>
@@ -99,153 +90,5 @@
         </div>
     </div>
 </div>
-<script>
-    const video = document.getElementById('video');
-    const toggleBtn = document.getElementById('toggle-camera');
-    const cameraWrapper = document.getElementById('camera-wrapper');
-    const hasilDeteksiEl = document.getElementById('hasil-deteksi');
-    const hasilConfidenceEl = document.getElementById('hasil-confidence');
-    const hasilModeEl = document.getElementById('hasil-mode');
-    const canvas = document.createElement('canvas');
-
-    const pythonApiBaseUrl = 'http://127.0.0.1:5000';
-    const sendIntervalMs = 33;
-    const sendJpegQuality = 1;
-    const processWidth = 1280;
-    const processHeight = 720;
-
-    let currentStream = null;
-    let cameraActive = false;
-    let sendTimeoutId = null;
-    let isSendingFrame = false;
-    const videoBlocker = document.getElementById('video-blocker');
-
-
-    function stopSendingFrames() {
-        if (sendTimeoutId) {
-            clearTimeout(sendTimeoutId);
-            sendTimeoutId = null;
-        }
-        isSendingFrame = false;
-    }
-
-    async function sendFrameToApi() {
-        if (!cameraActive || isSendingFrame) {
-            return;
-        }
-
-        if (!video.videoWidth || !video.videoHeight) {
-            sendTimeoutId = setTimeout(sendFrameToApi, sendIntervalMs);
-            return;
-        }
-
-        isSendingFrame = true;
-
-        try {
-            canvas.width = processWidth;
-            canvas.height = processHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.save();
-            ctx.scale(-1, 1);
-            ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
-            ctx.restore();
-
-            const dataUrl = canvas.toDataURL('image/png', sendJpegQuality);
-
-            const response = await fetch(`${pythonApiBaseUrl}/predict`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ image: dataUrl })
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            hasilDeteksiEl.textContent = data.label || '-';
-            hasilConfidenceEl.textContent = Number.isFinite(data.confidence)
-                ? Number(data.confidence).toFixed(4)
-                : '-';
-            hasilModeEl.textContent = data.mode || '-';
-        } catch (error) {
-            hasilModeEl.textContent = 'API offline';
-            hasilConfidenceEl.textContent = '-';
-            hasilDeteksiEl.textContent = 'Belum terhubung';
-        } finally {
-            isSendingFrame = false;
-            if (cameraActive) {
-                sendTimeoutId = setTimeout(sendFrameToApi, sendIntervalMs);
-            }
-        }
-    }
-
-    function startSendingFrames() {
-        stopSendingFrames();
-        sendFrameToApi();
-    }
-
-    toggleBtn.onclick = function() {
-        if (!cameraActive) {
-            navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } } })
-                    .then(stream => {
-                    video.srcObject = stream;
-                    // prevent browser UI overlay: disable picture-in-picture and native controls
-                    try {
-                        video.disablePictureInPicture = true;
-                        video.removeAttribute('controls');
-                        video.controls = false;
-                    } catch (e) {
-                        // ignore if not supported
-                    }
-                    // prevent right-click context menu on the video
-                    video.addEventListener('contextmenu', (ev) => ev.preventDefault());
-                    currentStream = stream;
-                    cameraActive = true;
-                    // enable transparent blocker so browser hover UI won't appear
-                    if (videoBlocker) videoBlocker.style.display = 'block';
-                    cameraWrapper.classList.add('is-camera-active');
-                    toggleBtn.textContent = 'Nonaktifkan Kamera';
-                    toggleBtn.classList.remove('btn-primary');
-                    toggleBtn.classList.add('btn-danger');
-
-                    // Set video size to match stream
-                    const track = stream.getVideoTracks()[0];
-                    const settings = track.getSettings();
-                    video.width = settings.width || 1280;
-                    video.height = settings.height || 720;
-
-                    hasilDeteksiEl.textContent = 'Mendeteksi...';
-                    hasilConfidenceEl.textContent = '-';
-                    hasilModeEl.textContent = 'Menghubungkan API...';
-                    startSendingFrames();
-                })
-                .catch(err => {
-                    alert('Tidak dapat mengakses kamera: ' + err);
-                });
-            return;
-        }
-
-        if (currentStream) {
-            currentStream.getTracks().forEach(track => track.stop());
-            video.srcObject = null;
-            currentStream = null;
-        }
-        cameraActive = false;
-        stopSendingFrames();
-        if (videoBlocker) videoBlocker.style.display = 'none';
-        cameraWrapper.classList.remove('is-camera-active');
-        toggleBtn.textContent = 'Aktifkan Kamera';
-        toggleBtn.classList.remove('btn-danger');
-        toggleBtn.classList.add('btn-primary');
-        hasilDeteksiEl.textContent = '-';
-        hasilConfidenceEl.textContent = '-';
-        hasilModeEl.textContent = '-';
-    };
-
-    // no-op: resize overlay removed when bbox drawing disabled
-</script>
+@vite('resources/js/camera.js')
 @endsection
