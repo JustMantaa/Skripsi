@@ -126,10 +126,10 @@ lock = threading.Lock()
 # =====================================================
 # CONFIG - SWITCHING PARAMETERS
 # =====================================================
-NO_DETECTION_LIMIT = 5
+NO_DETECTION_LIMIT = 3
 RESULT_CACHE_SECONDS = 3.0
 LSTM_CONF_THRESHOLD = 0.70
-LSTM_TIMEOUT = 3.0
+LSTM_TIMEOUT = 5.0
 HAND_MISSING_LIMIT = 5
 
 
@@ -304,12 +304,12 @@ if __name__ == "__main__":
     print("Loading models...")
 
     # Load YOLO
-    yolo = YOLO(str(BASE_DIR / "output" / "best.pt"))
+    yolo = YOLO(str(BASE_DIR / "models" / "best.pt"))
     yolo_labels = yolo.names
 
     # Load LSTM
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    checkpoint = torch.load(str(BASE_DIR / "output" / "lstm_model.pt"), map_location=device)
+    checkpoint = torch.load(str(BASE_DIR / "models" / "lstm_model.pt"), map_location=device)
 
     state_dict = checkpoint["model_state_dict"]
     hidden1, hidden2 = infer_hidden_sizes(state_dict)
