@@ -136,165 +136,220 @@ HAND_MISSING_LIMIT = 5
 # =====================================================
 # GLOBAL STATE
 # =====================================================
-mode = "LSTM"
-yolo_enabled = False
-no_detection_count = 0
 sequence = []
 hand_missing_count = 0
 lstm_start_time = None
 frame_id = 0
-cached_response = None
-cache_until = 0.0
 
+cached_lstm_response = None
+lstm_cache_until = 0.0
 
 # =====================================================
 # API ENDPOINT
 # =====================================================
-@app.route("/predict", methods=["POST"])
-def predict():
-    global mode, yolo_enabled, no_detection_count, sequence, hand_missing_count
-    global lstm_start_time, frame_id, cached_response, cache_until
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({
+        "status": "ok",
+        "message": "Flask API running"
+    })
+
+
+@app.route("/predict-lstm", methods=["POST"])
+def predict_lstm():
+    global sequence
+    global hand_missing_count
+    global lstm_start_time
+    global frame_id
+    global cached_lstm_response
+    global lstm_cache_until
 
     payload = request.get_json(silent=True) or {}
     image = payload.get("image")
+
+    if not image:
+        return jsonify({
+            "label": "No image",
+            "confidence": 0.0,
+            "mode": "LSTM",
+            "status": "error"
+        }), 400
+
     frame = decode_data_url(image)
-    frame_id += 1
 
     with lock:
         now = time.time()
+        frame_id += 1
 
-        if cached_response is not None and now < cache_until:
-            cached = dict(cached_response)
-            cached["mode"] = mode
-            return jsonify(cached)
+        if cached_lstm_response is not None and now < lstm_cache_until:
+            return jsonify(cached_lstm_response)
 
-        response = build_response(mode_name=mode)
+        if lstm_start_time is not None and (now - lstm_start_time) > LSTM_TIMEOUT:
+            sequence = []
+            hand_missing_count = 0
+            lstm_start_time = None
 
-        # ===== MODE: YOLO =====
-        if mode == "YOLO":
-            results = yolo(frame, verbose=False)[0]
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-            if len(results.boxes) > 0:
-                no_detection_count = 0
-                conf = float(results.boxes.conf[0])
-                cls = int(results.boxes.cls[0])
-                label = yolo_labels[cls]
-                x1, y1, x2, y2 = map(float, results.boxes.xyxy[0])
+        mp_image = mp.Image(
+            image_format=mp.ImageFormat.SRGB,
+            data=rgb
+        )
 
-                response = build_response(
-                    label=label,
-                    confidence=conf,
-                    mode_name="YOLO",
-                    bbox={
-                        "x1": x1,
-                        "y1": y1,
-                        "x2": x2,
-                        "y2": y2,
-                        "width": float(frame.shape[1]),
-                        "height": float(frame.shape[0]),
-                    },
-                )
-                cached_response = dict(response)
-                cache_until = now + RESULT_CACHE_SECONDS
-            else:
-                no_detection_count += 1
-                response["label"] = "Tidak terdeteksi"
-                response["mode"] = "YOLO"
+        result = hand_detector.detect_for_video(mp_image, frame_id)
 
-                if no_detection_count >= NO_DETECTION_LIMIT:
-                    mode = "LSTM"
-                    yolo_enabled = False
-                    sequence = []
-                    hand_missing_count = 0
-                    lstm_start_time = None
-                    no_detection_count = 0
-                    cached_response = None
-                    cache_until = 0.0
+        if not result.hand_landmarks:
+            hand_missing_count += 1
 
-        # ===== MODE: LSTM =====
-        elif mode == "LSTM":
-            if lstm_start_time is not None and (now - lstm_start_time) > LSTM_TIMEOUT:
+            if hand_missing_count >= HAND_MISSING_LIMIT:
                 sequence = []
                 hand_missing_count = 0
                 lstm_start_time = None
 
-            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
-            result = hand_detector.detect_for_video(mp_image, frame_id)
+            return jsonify({
+                "label": f"Collect {len(sequence)}/{seq_len}",
+                "confidence": 0.0,
+                "mode": "LSTM",
+                "status": "collecting"
+            })
 
-            if not result.hand_landmarks:
-                hand_missing_count += 1
-                response["label"] = f"Collect {len(sequence)}/{seq_len}"
-                response["mode"] = "LSTM"
+        hand_missing_count = 0
 
-                if hand_missing_count >= HAND_MISSING_LIMIT:
-                    sequence = []
-                    hand_missing_count = 0
+        if lstm_start_time is None:
+            lstm_start_time = now
 
-            else:
-                hand_missing_count = 0
+        hand = result.hand_landmarks[0]
 
-                if lstm_start_time is None:
-                    lstm_start_time = now
+        coords = []
 
-                hand = result.hand_landmarks[0]
-                coords = []
-                for lm in hand:
-                    coords.extend([lm.x, lm.y, lm.z])
+        for lm in hand:
+            coords.extend([lm.x, lm.y, lm.z])
 
-                coords = np.array(coords, dtype=np.float32)
-                coords[0::3] = 1.0 - coords[0::3]
-                sequence.append(coords)
+        coords = np.array(coords, dtype=np.float32)
 
-                if len(sequence) > seq_len:
-                    sequence.pop(0)
+        coords[0::3] = 1.0 - coords[0::3]
 
-                response["label"] = f"Collect {len(sequence)}/{seq_len}"
-                response["mode"] = "LSTM"
+        sequence.append(coords)
 
-                if len(sequence) >= seq_len:
-                    seq_arr = np.array(sequence, dtype=np.float32)
-                    seq_norm = normalize_keypoint_sequence(seq_arr)
-                    x = np.expand_dims(seq_norm, axis=0)
-                    x = apply_scaler(x, lstm_scaler_mean, lstm_scaler_scale)
-                    x = torch.tensor(x).to(device)
+        if len(sequence) > seq_len:
+            sequence.pop(0)
 
-                    with torch.no_grad():
-                        logits = lstm(x)
-                        probs = torch.softmax(logits, dim=1)
-                        pred_class = int(torch.argmax(probs, dim=1).item())
-                        conf = float(probs[0, pred_class].item())
+        if len(sequence) < seq_len:
+            return jsonify({
+                "label": f"Collect {len(sequence)}/{seq_len}",
+                "confidence": 0.0,
+                "mode": "LSTM",
+                "status": "collecting"
+            })
 
-                    predicted = lstm_labels[pred_class]
-                    print(
-                        f"[DEBUG] LSTM Output: label={predicted}, conf={conf:.4f}, "
-                        f"threshold={LSTM_CONF_THRESHOLD}, all_probs={probs[0].cpu().numpy()}"
-                    )
+        seq_arr = np.array(sequence, dtype=np.float32)
 
-                    if conf < LSTM_CONF_THRESHOLD or predicted == "none":
-                        print(
-                            f"[DEBUG] LSTM rejected: conf={conf:.4f}, label={predicted}. "
-                            f"Switching to YOLO."
-                        )
-                        mode = "YOLO"
-                        yolo_enabled = True
-                        sequence = []
-                        hand_missing_count = 0
-                        lstm_start_time = None
-                        no_detection_count = 0
-                        cached_response = None
-                        cache_until = 0.0
-                        response = build_response(label="none", confidence=conf, mode_name="YOLO")
-                    else:
-                        print(f"[DEBUG] LSTM accepted: {predicted} with conf={conf:.4f}")
-                        response = build_response(label=predicted, confidence=conf, mode_name="LSTM")
-                        cached_response = dict(response)
-                        cache_until = now + RESULT_CACHE_SECONDS
-                        sequence = []
-                        hand_missing_count = 0
-                        lstm_start_time = None
+        seq_norm = normalize_keypoint_sequence(seq_arr)
+
+        x = np.expand_dims(seq_norm, axis=0)
+
+        x = apply_scaler(
+            x,
+            lstm_scaler_mean,
+            lstm_scaler_scale
+        )
+
+        x = torch.tensor(
+            x,
+            dtype=torch.float32
+        ).to(device)
+
+        with torch.no_grad():
+            logits = lstm(x)
+            probs = torch.softmax(logits, dim=1)
+
+            pred_class = int(torch.argmax(probs, dim=1).item())
+            conf = float(probs[0, pred_class].item())
+
+        predicted = lstm_labels[pred_class]
+
+        print(
+            f"[LSTM] label={predicted}, conf={conf:.4f}"
+        )
+
+        sequence = []
+        hand_missing_count = 0
+        lstm_start_time = None
+
+        if conf < LSTM_CONF_THRESHOLD or predicted == "none":
+            return jsonify({
+                "label": predicted,
+                "confidence": conf,
+                "mode": "LSTM",
+                "status": "rejected"
+            })
+
+        response = {
+            "label": predicted,
+            "confidence": conf,
+            "mode": "LSTM",
+            "status": "accepted"
+        }
+
+        cached_lstm_response = dict(response)
+        lstm_cache_until = now + RESULT_CACHE_SECONDS
 
         return jsonify(response)
+
+
+@app.route("/predict-yolo", methods=["POST"])
+def predict_yolo():
+    payload = request.get_json(silent=True) or {}
+    image = payload.get("image")
+
+    if not image:
+        return jsonify({
+            "label": "No image",
+            "confidence": 0.0,
+            "mode": "YOLO",
+            "status": "error"
+        }), 400
+
+    frame = decode_data_url(image)
+
+    with lock:
+        results = yolo(frame, verbose=False)[0]
+
+        if len(results.boxes) == 0:
+            return jsonify({
+                "label": "Tidak terdeteksi",
+                "confidence": 0.0,
+                "mode": "YOLO",
+                "status": "not_detected",
+                "bbox": None
+            })
+
+        best_idx = int(torch.argmax(results.boxes.conf).item())
+
+        conf = float(results.boxes.conf[best_idx])
+        cls = int(results.boxes.cls[best_idx])
+
+        label = yolo_labels[cls]
+
+        x1, y1, x2, y2 = map(
+            float,
+            results.boxes.xyxy[best_idx]
+        )
+
+        return jsonify({
+            "label": label,
+            "confidence": conf,
+            "mode": "YOLO",
+            "status": "detected",
+            "bbox": {
+                "x1": x1,
+                "y1": y1,
+                "x2": x2,
+                "y2": y2,
+                "width": float(frame.shape[1]),
+                "height": float(frame.shape[0]),
+            }
+        })
 
 
 # =====================================================
