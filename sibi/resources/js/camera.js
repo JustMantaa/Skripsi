@@ -4,7 +4,7 @@ const CameraApp = {
         lstmEndpoint: '/predict-lstm-landmarks',
         yoloEndpoint: '/predict-yolo',
 
-        sendIntervalMs: 66,
+        sendIntervalMs: 33,
         sendJpegQuality: 0.6,
         processWidth: 320,
         processHeight: 240,
@@ -125,12 +125,12 @@ const CameraApp = {
             const handLandmarks = results?.multiHandLandmarks?.[0] || null;
             const landmarks = this.extractLandmarks(handLandmarks);
 
-            await this.postLandmarksToApi(landmarks);
+            this.postLandmarksToApi(landmarks);
             return;
         }
 
         if (this.state.currentMode === 'YOLO') {
-            await this.postImageToYolo();
+            this.postImageToYolo();
         }
     },
 
