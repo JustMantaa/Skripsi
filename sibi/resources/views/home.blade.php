@@ -16,6 +16,7 @@
         background: rgba(255, 255, 255, 0.92);
         padding: 8px 14px;
         border-radius: 10px;
+        font-size: 28px;
         font-weight: bold;
         max-width: calc(100% - 20px);
         box-shadow: 0 2px 10px rgba(0,0,0,0.12);
@@ -26,6 +27,7 @@
         font-weight: 500;
         color: #555;
         word-break: break-word;
+        font-size: 16px;
     }
 
     .camera-placeholder {
@@ -117,7 +119,7 @@
         }
 
         .camera-status small {
-            font-size: 12px;
+            font-size: 16px;
         }
 
         #video {
@@ -153,7 +155,7 @@
         }
 
         .camera-status small {
-            font-size: 11px;
+            font-size: 12px;
         }
 
         .camera-placeholder-icon {
