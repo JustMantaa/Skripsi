@@ -4,14 +4,11 @@ import time
 from pathlib import Path
 
 import cv2
-import mediapipe as mp
 import numpy as np
 import torch
 import torch.nn as nn
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from mediapipe.tasks import python
-from mediapipe.tasks.python import vision
 from ultralytics import YOLO
 
 
@@ -139,7 +136,6 @@ HAND_MISSING_LIMIT = 5
 sequence = []
 hand_missing_count = 0
 lstm_start_time = None
-frame_id = 0
 
 cached_lstm_response = None
 lstm_cache_until = 0.0
@@ -156,32 +152,37 @@ def health():
 
 
 @app.route("/predict-lstm", methods=["POST"])
+@app.route("/predict-lstm-landmarks", methods=["POST"])
 def predict_lstm():
     global sequence
     global hand_missing_count
     global lstm_start_time
-    global frame_id
     global cached_lstm_response
     global lstm_cache_until
 
     payload = request.get_json(silent=True) or {}
-    image = payload.get("image")
+    landmarks = payload.get("landmarks")
 
-    if not image:
+    if landmarks is not None and not isinstance(landmarks, list):
         return jsonify({
-            "label": "No image",
+            "label": "Invalid landmarks",
             "confidence": 0.0,
             "mode": "LSTM",
             "status": "error"
         }), 400
 
-    frame = decode_data_url(image)
+    if landmarks is not None and len(landmarks) != 63:
+        return jsonify({
+            "label": "Invalid landmarks length",
+            "confidence": 0.0,
+            "mode": "LSTM",
+            "status": "error"
+        }), 400
 
     with lock:
         now = time.time()
-        frame_id += 1
 
-        if cached_lstm_response is not None and now < lstm_cache_until:
+        if landmarks is not None and cached_lstm_response is not None and now < lstm_cache_until:
             return jsonify(cached_lstm_response)
 
         if lstm_start_time is not None and (now - lstm_start_time) > LSTM_TIMEOUT:
@@ -189,16 +190,7 @@ def predict_lstm():
             hand_missing_count = 0
             lstm_start_time = None
 
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-        mp_image = mp.Image(
-            image_format=mp.ImageFormat.SRGB,
-            data=rgb
-        )
-
-        result = hand_detector.detect_for_video(mp_image, frame_id)
-
-        if not result.hand_landmarks:
+        if landmarks is None:
             hand_missing_count += 1
 
             if hand_missing_count >= HAND_MISSING_LIMIT:
@@ -218,16 +210,7 @@ def predict_lstm():
         if lstm_start_time is None:
             lstm_start_time = now
 
-        hand = result.hand_landmarks[0]
-
-        coords = []
-
-        for lm in hand:
-            coords.extend([lm.x, lm.y, lm.z])
-
-        coords = np.array(coords, dtype=np.float32)
-
-        coords[0::3] = 1.0 - coords[0::3]
+        coords = np.array(landmarks, dtype=np.float32)
 
         sequence.append(coords)
 
@@ -378,11 +361,6 @@ if __name__ == "__main__":
     lstm_scaler_mean = np.asarray(checkpoint["scaler_mean"], dtype=np.float32) if "scaler_mean" in checkpoint else None
     lstm_scaler_scale = np.asarray(checkpoint["scaler_scale"], dtype=np.float32) if "scaler_scale" in checkpoint else None
     seq_len = checkpoint.get("timesteps", 30)
-
-    # Load MediaPipe
-    base_options = python.BaseOptions(model_asset_path=str(BASE_DIR / "hand_landmarker.task"))
-    options = vision.HandLandmarkerOptions(base_options=base_options, num_hands=1, running_mode=vision.RunningMode.VIDEO)
-    hand_detector = vision.HandLandmarker.create_from_options(options)
 
     print("API READY at http://127.0.0.1:5000")
     app.run(host="127.0.0.1", port=5000, debug=False)
