@@ -28,7 +28,6 @@ const CameraApp = {
     init() {
         this.cacheElements();
         this.setupEventListeners();
-        this.saveScrollState();
     },
 
     // Cache DOM elements
@@ -44,21 +43,9 @@ const CameraApp = {
         };
     },
 
-    // Save scroll state for later restoration
-    saveScrollState() {
-        this.originalBodyOverflow = document.body.style.overflow;
-        this.originalTouchAction = document.body.style.touchAction;
-    },
-
     // Setup event listeners
     setupEventListeners() {
         this.elements.toggleBtn.addEventListener('click', () => this.toggleCamera());
-    },
-
-    // Lock/unlock scroll
-    setScrollLock(locked) {
-        document.body.style.overflow = locked ? 'hidden' : (this.originalBodyOverflow || '');
-        document.body.style.touchAction = locked ? 'none' : (this.originalTouchAction || '');
     },
 
     // Stop sending frames
@@ -179,7 +166,6 @@ const CameraApp = {
                 this.elements.toggleBtn.textContent = 'Nonaktifkan Kamera';
                 this.elements.toggleBtn.classList.remove('btn-primary');
                 this.elements.toggleBtn.classList.add('btn-danger');
-                this.setScrollLock(true);
 
                 // Set video size
                 const track = stream.getVideoTracks()[0];
@@ -212,7 +198,6 @@ const CameraApp = {
         this.elements.toggleBtn.textContent = 'Aktifkan Kamera';
         this.elements.toggleBtn.classList.remove('btn-danger');
         this.elements.toggleBtn.classList.add('btn-primary');
-        this.setScrollLock(false);
 
         this.elements.hasilDeteksi.textContent = '-';
         this.elements.hasilConfidence.textContent = '-';
