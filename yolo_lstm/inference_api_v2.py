@@ -126,8 +126,8 @@ lock = threading.Lock()
 NO_DETECTION_LIMIT = 3
 RESULT_CACHE_SECONDS = 3.0
 LSTM_CONF_THRESHOLD = 0.70
-LSTM_TIMEOUT = 5.0
-HAND_MISSING_LIMIT = 5
+LSTM_TIMEOUT = 10.0
+HAND_MISSING_LIMIT = 15
 
 
 # =====================================================
@@ -194,9 +194,7 @@ def predict_lstm():
             hand_missing_count += 1
 
             if hand_missing_count >= HAND_MISSING_LIMIT:
-                sequence = []
                 hand_missing_count = 0
-                lstm_start_time = None
 
             return jsonify({
                 "label": f"Collect {len(sequence)}/{seq_len}",
