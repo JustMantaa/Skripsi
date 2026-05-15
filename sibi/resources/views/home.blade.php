@@ -51,15 +51,13 @@
     }
 
     #video-container {
-        position: relative;
-        width: 100%;
-        height: 70vh;
-        max-height: 720px;
-        min-height: 420px;
-        background: #f3f3f3;
-        overflow: hidden;
-        border-radius: 12px;
-    }
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    max-height: 70vh;
+    overflow: hidden;
+    background: #f3f3f3;
+}
 
     #video {
         width: 100%;
