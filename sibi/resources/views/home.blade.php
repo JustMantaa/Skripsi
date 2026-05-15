@@ -161,10 +161,9 @@
         }
     }
 </style>
-<div class="container mt-3">
-    </div>
-    <div class="row mb-4">
-        <div class="col-lg-8 mx-auto p-2">
+<div class="container-fluid px-2 px-md-4 mt-3">
+    <div class="row mb-4 mx-0">
+        <div class="col-12 col-lg-8 mx-auto p-2">>
             <div class="card camera-wrapper" id="camera-wrapper">
                 <div class="card-body p-0" style="position: relative;">
                     <div class="camera-status">
