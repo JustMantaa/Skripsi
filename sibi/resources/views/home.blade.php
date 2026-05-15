@@ -51,20 +51,21 @@
     #video-container {
         position: relative;
         width: 100%;
-        background: #000;
+        height: 70vh;
+        max-height: 720px;
+        min-height: 420px;
+        background: #f3f3f3;
         overflow: hidden;
         border-radius: 12px;
     }
 
     #video {
         width: 100%;
-        height: auto;
-        max-height: 80vh;
+        height: 100%;
         display: block;
         background: #f3f3f3;
         object-fit: cover;
         transform: scaleX(-1);
-        border-radius: 12px;
     }
 
     #video:focus {
@@ -121,8 +122,8 @@
 
         #video {
             width: 100%;
-            height: auto;
-            max-height: 65vh;
+            height: 60vh;
+            min-height: 360px;
             border-radius: 10px;
         }
 
@@ -143,7 +144,8 @@
     /* Small Mobile */
     @media (max-width: 480px) {
         #video {
-            max-height: 60vh;
+            max-height: 55vh;
+            min-height: 300px;
         }
 
         .camera-status {
