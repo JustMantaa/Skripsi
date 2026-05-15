@@ -1,37 +1,35 @@
 /**
  * Camera and Hand Detection Module
- * Handles webcam capture, frame sending to API, and result display
  */
 
 const CameraApp = {
-    // Configuration
     config: {
-        pythonApiBaseUrl: 'http://127.0.0.1:5000',
+        pythonApiBaseUrl: '/flask-api',
         sendIntervalMs: 66,
-        sendJpegQuality: 0.8,
-        processWidth: 640,
-        processHeight: 360,
+        sendJpegQuality: 0.6,
+        processWidth: 320,
+        processHeight: 240,
+        yoloFailLimit: 3,
     },
 
-    // DOM Elements
     elements: {},
 
-    // State
     state: {
         currentStream: null,
         cameraActive: false,
         sendTimeoutId: null,
         isSendingFrame: false,
+
+        currentMode: 'LSTM',
+        yoloFailCount: 0,
     },
 
-    // Initialize the app
     init() {
         this.cacheElements();
         this.setupEventListeners();
         this.saveScrollState();
     },
 
-    // Cache DOM elements
     cacheElements() {
         this.elements = {
             video: document.getElementById('video'),
@@ -44,24 +42,20 @@ const CameraApp = {
         };
     },
 
-    // Save scroll state for later restoration
     saveScrollState() {
         this.originalBodyOverflow = document.body.style.overflow;
         this.originalTouchAction = document.body.style.touchAction;
     },
 
-    // Setup event listeners
     setupEventListeners() {
         this.elements.toggleBtn.addEventListener('click', () => this.toggleCamera());
     },
 
-    // Lock/unlock scroll
     setScrollLock(locked) {
         document.body.style.overflow = locked ? 'hidden' : (this.originalBodyOverflow || '');
         document.body.style.touchAction = locked ? 'none' : (this.originalTouchAction || '');
     },
 
-    // Stop sending frames
     stopSendingFrames() {
         if (this.state.sendTimeoutId) {
             clearTimeout(this.state.sendTimeoutId);
@@ -70,7 +64,6 @@ const CameraApp = {
         this.state.isSendingFrame = false;
     },
 
-    // Send frame to API
     async sendFrameToApi() {
         if (!this.state.cameraActive || this.state.isSendingFrame) {
             return;
@@ -89,6 +82,7 @@ const CameraApp = {
 
             canvas.width = processWidth;
             canvas.height = processHeight;
+
             const ctx = canvas.getContext('2d');
             ctx.save();
             ctx.scale(-1, 1);
@@ -97,7 +91,11 @@ const CameraApp = {
 
             const dataUrl = canvas.toDataURL('image/jpeg', this.config.sendJpegQuality);
 
-            const response = await fetch(`${this.config.pythonApiBaseUrl}/predict`, {
+            const endpoint = this.state.currentMode === 'LSTM'
+                ? '/predict-lstm'
+                : '/predict-yolo';
+
+            const response = await fetch(`${this.config.pythonApiBaseUrl}${endpoint}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -111,7 +109,10 @@ const CameraApp = {
 
             const data = await response.json();
             this.updateUI(data);
+            this.handleSwitching(data);
+
         } catch (error) {
+            console.error('API error:', error);
             this.updateUI({
                 label: 'Belum terhubung',
                 confidence: '-',
@@ -119,28 +120,54 @@ const CameraApp = {
             });
         } finally {
             this.state.isSendingFrame = false;
+
             if (this.state.cameraActive) {
-                this.state.sendTimeoutId = setTimeout(() => this.sendFrameToApi(), this.config.sendIntervalMs);
+                this.state.sendTimeoutId = setTimeout(
+                    () => this.sendFrameToApi(),
+                    this.config.sendIntervalMs
+                );
             }
         }
     },
 
-    // Update UI with API response
+    handleSwitching(data) {
+        if (this.state.currentMode === 'LSTM') {
+            if (data.status === 'rejected') {
+                this.state.currentMode = 'YOLO';
+                this.state.yoloFailCount = 0;
+                this.elements.hasilMode.textContent = 'YOLO';
+            }
+            return;
+        }
+
+        if (this.state.currentMode === 'YOLO') {
+            if (data.status === 'not_detected') {
+                this.state.yoloFailCount++;
+
+                if (this.state.yoloFailCount >= this.config.yoloFailLimit) {
+                    this.state.currentMode = 'LSTM';
+                    this.state.yoloFailCount = 0;
+                    this.elements.hasilMode.textContent = 'LSTM';
+                }
+            } else if (data.status === 'detected') {
+                this.state.yoloFailCount = 0;
+            }
+        }
+    },
+
     updateUI(data) {
         this.elements.hasilDeteksi.textContent = data.label || '-';
         this.elements.hasilConfidence.textContent = Number.isFinite(data.confidence)
             ? Number(data.confidence).toFixed(4)
             : '-';
-        this.elements.hasilMode.textContent = data.mode || '-';
+        this.elements.hasilMode.textContent = data.mode || this.state.currentMode || '-';
     },
 
-    // Start sending frames
     startSendingFrames() {
         this.stopSendingFrames();
         this.sendFrameToApi();
     },
 
-    // Toggle camera on/off
     toggleCamera() {
         if (!this.state.cameraActive) {
             this.startCamera();
@@ -149,8 +176,12 @@ const CameraApp = {
         }
     },
 
-    // Start camera
     startCamera() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            alert('Browser tidak mendukung akses kamera. Gunakan HTTPS.');
+            return;
+        }
+
         navigator.mediaDevices
             .getUserMedia({
                 video: {
@@ -161,27 +192,25 @@ const CameraApp = {
             .then((stream) => {
                 this.elements.video.srcObject = stream;
 
-                // Disable native controls
                 try {
                     this.elements.video.disablePictureInPicture = true;
                     this.elements.video.removeAttribute('controls');
                     this.elements.video.controls = false;
-                } catch (e) {
-                    // Ignore if not supported
-                }
+                } catch (e) {}
 
-                // Prevent right-click context menu
                 this.elements.video.addEventListener('contextmenu', (ev) => ev.preventDefault());
 
                 this.state.currentStream = stream;
                 this.state.cameraActive = true;
+                this.state.currentMode = 'LSTM';
+                this.state.yoloFailCount = 0;
+
                 this.elements.cameraWrapper.classList.add('is-camera-active');
                 this.elements.toggleBtn.textContent = 'Nonaktifkan Kamera';
                 this.elements.toggleBtn.classList.remove('btn-primary');
                 this.elements.toggleBtn.classList.add('btn-danger');
                 this.setScrollLock(true);
 
-                // Set video size
                 const track = stream.getVideoTracks()[0];
                 const settings = track.getSettings();
                 this.elements.video.width = settings.width || 1280;
@@ -189,7 +218,7 @@ const CameraApp = {
 
                 this.elements.hasilDeteksi.textContent = 'Mendeteksi...';
                 this.elements.hasilConfidence.textContent = '-';
-                this.elements.hasilMode.textContent = 'Menghubungkan API...';
+                this.elements.hasilMode.textContent = 'LSTM';
 
                 this.startSendingFrames();
             })
@@ -198,7 +227,6 @@ const CameraApp = {
             });
     },
 
-    // Stop camera
     stopCamera() {
         if (this.state.currentStream) {
             this.state.currentStream.getTracks().forEach((track) => track.stop());
@@ -207,7 +235,11 @@ const CameraApp = {
         }
 
         this.state.cameraActive = false;
+        this.state.currentMode = 'LSTM';
+        this.state.yoloFailCount = 0;
+
         this.stopSendingFrames();
+
         this.elements.cameraWrapper.classList.remove('is-camera-active');
         this.elements.toggleBtn.textContent = 'Aktifkan Kamera';
         this.elements.toggleBtn.classList.remove('btn-danger');
@@ -220,7 +252,6 @@ const CameraApp = {
     },
 };
 
-// Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     CameraApp.init();
 });
