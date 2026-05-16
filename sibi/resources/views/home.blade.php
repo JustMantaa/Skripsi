@@ -54,7 +54,7 @@
     position: relative;
     width: 100%;
     aspect-ratio: 16 / 9;
-    max-height: 70vh;
+    max-height: 90vh;
     overflow: hidden;
     background: #f3f3f3;
 }
@@ -88,82 +88,97 @@
     }
 
     /* Tablet */
-    @media (max-width: 992px) {
-        #video {
-            max-height: 70vh;
-        }
-
-        .camera-placeholder-icon {
-            font-size: 80px;
-        }
+@media (max-width: 992px) {
+    #video-container {
+        height: 90vh;
+        min-height: unset;
+        max-height: unset;
+        aspect-ratio: unset;
     }
 
-    /* Mobile */
-    @media (max-width: 768px) {
-        .container {
-            padding-left: 10px;
-            padding-right: 10px;
-        }
-
-        .camera-wrapper {
-            border-radius: 10px;
-        }
-
-        .camera-status {
-            top: 8px;
-            left: 8px;
-            padding: 8px 12px;
-            font-size: 14px;
-        }
-
-        .camera-status small {
-            font-size: 16px;
-        }
-
-        #video {
-            width: 100%;
-            height: 60vh;
-            min-height: 360px;
-            border-radius: 10px;
-        }
-
-        .camera-placeholder-icon {
-            font-size: 70px;
-        }
-
-        .camera-controls {
-            padding: 12px;
-        }
-
-        .camera-controls .btn {
-            width: 100%;
-            min-width: unset;
-        }
+    #video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
     }
 
-    /* Small Mobile */
-    @media (max-width: 480px) {
-        #video {
-            max-height: 55vh;
-            min-height: 300px;
-        }
-
-        .camera-status {
-            font-size: 13px;
-        }
-
-        .camera-status small {
-            font-size: 12px;
-        }
-
-        .camera-placeholder-icon {
-            font-size: 60px;
-        }
+    .camera-placeholder-icon {
+        font-size: 80px;
     }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    .camera-wrapper {
+        border-radius: 10px;
+    }
+
+    .camera-status {
+        top: 8px;
+        left: 8px;
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+
+    .camera-status small {
+        font-size: 13px;
+    }
+
+    #video-container {
+        height: 90vh;
+        min-height: unset;
+        max-height: unset;
+        aspect-ratio: unset;
+    }
+
+    #video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 10px;
+    }
+
+    .camera-placeholder-icon {
+        font-size: 70px;
+    }
+
+    .camera-controls {
+        padding: 12px;
+    }
+
+    .camera-controls .btn {
+        width: 100%;
+        min-width: unset;
+    }
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+    #video-container {
+        height: 90vh;
+    }
+
+    .camera-status {
+        font-size: 13px;
+    }
+
+    .camera-status small {
+        font-size: 12px;
+    }
+
+    .camera-placeholder-icon {
+        font-size: 60px;
+    }
+}
 </style>
 <div class="container-fluid px-2 px-md-4 mt-3">
     <div class="row mb-4 mx-0">
-        <div class="col-12 col-lg-8 mx-auto p-2">>
+        <div class="col-12 col-lg-8 mx-auto p-2">
             <div class="card camera-wrapper" id="camera-wrapper">
                 <div class="card-body p-0" style="position: relative;">
                     <div class="camera-status">
