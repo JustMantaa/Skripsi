@@ -6,7 +6,8 @@
 const CameraApp = {
     // Configuration
     config: {
-        pythonApiBaseUrl: '/flask-api',
+        //pythonApiBaseUrl: 'http://127.0.0.1:5000/predict', local api
+        pythonApiBaseUrl: '/flask-api', //server api
         sendIntervalMs: 33,
         sendJpegQuality: 0.8,
         processWidth: 640,
@@ -84,6 +85,7 @@ const CameraApp = {
 
             const dataUrl = canvas.toDataURL('image/jpeg', this.config.sendJpegQuality);
 
+            //const response = await fetch(this.config.pythonApiBaseUrl, { lokal api
             const response = await fetch(`${this.config.pythonApiBaseUrl}/predict`, {
                 method: 'POST',
                 headers: {

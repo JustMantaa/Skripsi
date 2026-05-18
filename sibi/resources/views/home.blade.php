@@ -50,6 +50,46 @@
         display: none;
     }
 
+    .camera-tips {
+        background: rgba(255,255,255,0.95);
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+        padding: 12px 16px;
+        margin-bottom: 8px;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+        font-size: 15px;
+        color: #222;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .camera-tips .tips-col-icon,
+    .camera-tips .tips-col-close {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+    }
+
+    .camera-tips .tips-col-text {
+        flex: 1 1 auto;
+    }
+
+    .camera-tips .info-icon {
+        font-size: 18px;
+        line-height: 1;
+    }
+
+    .camera-tips .close-tips {
+        border: none;
+        background: transparent;
+        font-size: 20px;
+        line-height: 1;
+        color: #666;
+        padding: 4px 6px;
+        cursor: pointer;
+    }
+
     #video-container {
     position: relative;
     width: 100%;
@@ -175,10 +215,63 @@
         font-size: 60px;
     }
 }
+
+/* Tips responsive adjustments */
+@media (max-width: 768px) {
+    .camera-tips {
+        padding: 10px 12px;
+    }
+
+    .camera-tips .info-icon {
+        font-size: 16px;
+    }
+
+    .camera-tips .close-tips {
+        font-size: 18px;
+        padding: 2px 6px;
+    }
+
+    .camera-tips .tips-col-text p {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    .camera-tips {
+        padding: 8px 10px;
+    }
+
+    .camera-tips .info-icon {
+        font-size: 14px;
+    }
+
+    .camera-tips .close-tips {
+        font-size: 18px;
+        padding: 2px 4px;
+    }
+
+    .camera-tips .tips-col-text p {
+        font-size: 13px;
+    }
+}
 </style>
 <div class="container-fluid px-2 px-md-4 mt-3">
     <div class="row mb-4 mx-0">
         <div class="col-12 col-lg-8 mx-auto p-2">
+            <div>
+                <div id="camera-tips" class="camera-tips" role="region" aria-label="Tips Kamera">
+                    <div class="tips-col-icon">
+                        <i class="fa-solid fa-circle-info info-icon" aria-hidden="true"></i>
+                    </div>
+                    <div class="tips-col-text">
+                        <p class="mb-0">Gunakan tangan kanan dan lakukan gerakan secara perlahan di depan kamera untuk hasil deteksi yang lebih akurat. Pastikan pencahayaan cukup dan latar belakang tidak terlalu ramai.</p>
+                    </div>
+                    <div class="tips-col-close">
+                        <button class="close-tips" aria-label="Tutup tips" onclick="document.getElementById('camera-tips').style.display='none'">&times;</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="card camera-wrapper" id="camera-wrapper">
                 <div class="card-body p-0" style="position: relative;">
                     <div class="camera-status">
