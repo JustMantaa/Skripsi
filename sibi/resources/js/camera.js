@@ -6,13 +6,12 @@
 const CameraApp = {
     // Configuration
     config: {
-        //pythonApiBaseUrl: 'http://127.0.0.1:5000/predict', local api
+        //pythonApiBaseUrl: 'http://127.0.0.1:5000/predict', //local api
         pythonApiBaseUrl: '/flask-api', //server api
         sendIntervalMs: 33,
         sendJpegQuality: 0.8,
-        // maximum width to send to API for performance; actual capture
-        // will preserve the camera's aspect ratio
-        processMaxWidth: 640,
+        processWidth: 640,
+        processHeight: 360,
     },
 
     // DOM Elements
@@ -73,37 +72,16 @@ const CameraApp = {
         this.state.isSendingFrame = true;
 
         try {
-                const { canvas } = this.elements;
-                const { processMaxWidth } = this.config;
+            const { canvas } = this.elements;
+            const { processWidth, processHeight } = this.config;
 
-                // Use the video's intrinsic size when available to preserve aspect ratio
-                const video = this.elements.video;
-                const videoW = video.videoWidth || video.width || 1280;
-                const videoH = video.videoHeight || video.height || 720;
-
-                // Downscale if the video width is larger than processMaxWidth
-                let targetW = videoW;
-                let targetH = videoH;
-                if (processMaxWidth && videoW > processMaxWidth) {
-                    const scale = processMaxWidth / videoW;
-                    targetW = Math.round(videoW * scale);
-                    targetH = Math.round(videoH * scale);
-                }
-
-                // Respect devicePixelRatio for better quality on high-DPI devices
-                const dpr = window.devicePixelRatio || 1;
-                canvas.width = Math.round(targetW * dpr);
-                canvas.height = Math.round(targetH * dpr);
-                canvas.style.width = targetW + 'px';
-                canvas.style.height = targetH + 'px';
-
-                const ctx = canvas.getContext('2d');
-                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-                ctx.save();
-                // mirror horizontally
-                ctx.scale(-1, 1);
-                ctx.drawImage(this.elements.video, -targetW, 0, targetW, targetH);
-                ctx.restore();
+            canvas.width = processWidth;
+            canvas.height = processHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.save();
+            ctx.scale(-1, 1);
+            ctx.drawImage(this.elements.video, -canvas.width, 0, canvas.width, canvas.height);
+            ctx.restore();
 
             const dataUrl = canvas.toDataURL('image/jpeg', this.config.sendJpegQuality);
 
@@ -191,23 +169,11 @@ const CameraApp = {
                 this.elements.toggleBtn.classList.remove('btn-primary');
                 this.elements.toggleBtn.classList.add('btn-danger');
 
-                // When metadata is available, adjust container height to match
-                // the camera's aspect ratio so the video is not visually distorted.
+                // Set video size
                 const track = stream.getVideoTracks()[0];
                 const settings = track.getSettings();
-
-                // Do not force fixed element width/height which can distort the
-                // displayed video; instead update the container height based on
-                // the actual video aspect ratio once metadata is loaded.
-                this.elements.video.addEventListener('loadedmetadata', () => {
-                    const vW = this.elements.video.videoWidth || settings.width || 1280;
-                    const vH = this.elements.video.videoHeight || settings.height || 720;
-                    const container = document.getElementById('video-container');
-                    if (container && vW && vH) {
-                        const newHeight = Math.round(container.offsetWidth * (vH / vW));
-                        container.style.height = newHeight + 'px';
-                    }
-                }, { once: true });
+                this.elements.video.width = settings.width || 1280;
+                this.elements.video.height = settings.height || 720;
 
                 this.elements.hasilDeteksi.textContent = 'Mendeteksi...';
                 this.elements.hasilConfidence.textContent = '-';
