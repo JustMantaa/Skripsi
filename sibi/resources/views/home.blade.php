@@ -264,7 +264,7 @@
                         <i class="fa-solid fa-circle-info info-icon" aria-hidden="true"></i>
                     </div>
                     <div class="tips-col-text">
-                        <p class="mb-0">Gunakan tangan kanan dan lakukan gerakan secara perlahan di depan kamera untuk hasil deteksi yang lebih akurat. Pastikan pencahayaan cukup dan latar belakang tidak terlalu ramai.</p>
+                        <p class="mb-0">Gunakan tangan kanan dan lakukan gerakan secara perlahan di depan kamera untuk memperoleh hasil deteksi yang lebih akurat. Pastikan pencahayaan cukup dan latar belakang tidak terlalu ramai. Disarankan menggunakan perangkat laptop atau PC dengan webcam agar proses deteksi dapat berjalan lebih optimal dan stabil.</p>
                     </div>
                     <div class="tips-col-close">
                         <button class="close-tips" aria-label="Tutup tips" onclick="document.getElementById('camera-tips').style.display='none'">&times;</button>

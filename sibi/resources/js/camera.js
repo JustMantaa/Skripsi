@@ -10,8 +10,9 @@ const CameraApp = {
         pythonApiBaseUrl: '/flask-api', //server api
         sendIntervalMs: 33,
         sendJpegQuality: 0.8,
-        processWidth: 640,
-        processHeight: 360,
+        // maximum width to send to API for performance; actual capture
+        // will preserve the camera's aspect ratio
+        processMaxWidth: 640,
     },
 
     // DOM Elements
@@ -72,16 +73,37 @@ const CameraApp = {
         this.state.isSendingFrame = true;
 
         try {
-            const { canvas } = this.elements;
-            const { processWidth, processHeight } = this.config;
+                const { canvas } = this.elements;
+                const { processMaxWidth } = this.config;
 
-            canvas.width = processWidth;
-            canvas.height = processHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.save();
-            ctx.scale(-1, 1);
-            ctx.drawImage(this.elements.video, -canvas.width, 0, canvas.width, canvas.height);
-            ctx.restore();
+                // Use the video's intrinsic size when available to preserve aspect ratio
+                const video = this.elements.video;
+                const videoW = video.videoWidth || video.width || 1280;
+                const videoH = video.videoHeight || video.height || 720;
+
+                // Downscale if the video width is larger than processMaxWidth
+                let targetW = videoW;
+                let targetH = videoH;
+                if (processMaxWidth && videoW > processMaxWidth) {
+                    const scale = processMaxWidth / videoW;
+                    targetW = Math.round(videoW * scale);
+                    targetH = Math.round(videoH * scale);
+                }
+
+                // Respect devicePixelRatio for better quality on high-DPI devices
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = Math.round(targetW * dpr);
+                canvas.height = Math.round(targetH * dpr);
+                canvas.style.width = targetW + 'px';
+                canvas.style.height = targetH + 'px';
+
+                const ctx = canvas.getContext('2d');
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                ctx.save();
+                // mirror horizontally
+                ctx.scale(-1, 1);
+                ctx.drawImage(this.elements.video, -targetW, 0, targetW, targetH);
+                ctx.restore();
 
             const dataUrl = canvas.toDataURL('image/jpeg', this.config.sendJpegQuality);
 
@@ -169,11 +191,23 @@ const CameraApp = {
                 this.elements.toggleBtn.classList.remove('btn-primary');
                 this.elements.toggleBtn.classList.add('btn-danger');
 
-                // Set video size
+                // When metadata is available, adjust container height to match
+                // the camera's aspect ratio so the video is not visually distorted.
                 const track = stream.getVideoTracks()[0];
                 const settings = track.getSettings();
-                this.elements.video.width = settings.width || 1280;
-                this.elements.video.height = settings.height || 720;
+
+                // Do not force fixed element width/height which can distort the
+                // displayed video; instead update the container height based on
+                // the actual video aspect ratio once metadata is loaded.
+                this.elements.video.addEventListener('loadedmetadata', () => {
+                    const vW = this.elements.video.videoWidth || settings.width || 1280;
+                    const vH = this.elements.video.videoHeight || settings.height || 720;
+                    const container = document.getElementById('video-container');
+                    if (container && vW && vH) {
+                        const newHeight = Math.round(container.offsetWidth * (vH / vW));
+                        container.style.height = newHeight + 'px';
+                    }
+                }, { once: true });
 
                 this.elements.hasilDeteksi.textContent = 'Mendeteksi...';
                 this.elements.hasilConfidence.textContent = '-';
