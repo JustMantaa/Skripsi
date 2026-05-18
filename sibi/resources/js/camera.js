@@ -116,25 +116,11 @@ const CameraApp = {
 
     // Update UI with API response
     updateUI(data) {
-        let label = data.label || data.letter || '-';
-
-        if (
-            data.state === 'LSTM_RUN' &&
-            Number.isFinite(Number(data.lstm_progress)) &&
-            Number.isFinite(Number(data.lstm_total))
-        ) {
-            label = `Collect ${data.lstm_progress}/${data.lstm_total}`;
-        }
-
-        const mode = data.mode || data.source || data.state || '-';
-
-        this.elements.hasilDeteksi.textContent = label;
-
-        this.elements.hasilConfidence.textContent = Number.isFinite(Number(data.confidence))
+        this.elements.hasilDeteksi.textContent = data.label || '-';
+        this.elements.hasilConfidence.textContent = Number.isFinite(data.confidence)
             ? Number(data.confidence).toFixed(4)
             : '-';
-
-        this.elements.hasilMode.textContent = mode;
+        this.elements.hasilMode.textContent = data.mode || '-';
     },
 
     // Start sending frames
