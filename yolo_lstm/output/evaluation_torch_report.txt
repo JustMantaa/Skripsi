@@ -1,0 +1,26 @@
+Confusion Matrix:
+[[10  0  0  0  0]
+ [ 0 10  0  0  0]
+ [ 0  0 10  0  0]
+ [ 0  0  0 10  0]
+ [ 0  1  1  0  8]]
+
+Aggregate Metrics:
+Accuracy : 0.9600
+Precision: 0.9636 (weighted)
+Recall   : 0.9600 (weighted)
+F1-score : 0.9587 (weighted)
+
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           D     1.0000    1.0000    1.0000        10
+           I     0.9091    1.0000    0.9524        10
+           J     0.9091    1.0000    0.9524        10
+           Z     1.0000    1.0000    1.0000        10
+        none     1.0000    0.8000    0.8889        10
+
+    accuracy                         0.9600        50
+   macro avg     0.9636    0.9600    0.9587        50
+weighted avg     0.9636    0.9600    0.9587        50
