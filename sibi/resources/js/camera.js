@@ -8,6 +8,8 @@ const CameraApp = {
     config: {
         // pythonApiBaseUrl: 'http://127.0.0.1:5000/predict', //local api
         pythonApiBaseUrl: '/flask-api', //server api
+        pythonPredictEndpoint: '/predict',
+        pythonResetEndpoint: '/reset',
         sendIntervalMs: 66,
         sendJpegQuality: 0.8,
         processWidth: 640,
@@ -88,8 +90,7 @@ const CameraApp = {
 
             const dataUrl = canvas.toDataURL('image/jpeg', this.config.sendJpegQuality);
 
-            const response = await fetch(this.config.pythonApiBaseUrl, { //lokal api
-            //const response = await fetch(`${this.config.pythonApiBaseUrl}/predict`, {
+            const response = await fetch(`${this.config.pythonApiBaseUrl}${this.config.pythonPredictEndpoint}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -149,7 +150,7 @@ const CameraApp = {
         this.stopSendingFrames();
 
         try {
-            const response = await fetch('http://127.0.0.1:5000/reset', {
+            const response = await fetch(`${this.config.pythonApiBaseUrl}${this.config.pythonResetEndpoint}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
