@@ -23,6 +23,7 @@ const CameraApp = {
         cameraActive: false,
         sendTimeoutId: null,
         isSendingFrame: false,
+        isResetting: false,
     },
 
     // Initialize the app
@@ -36,6 +37,7 @@ const CameraApp = {
         this.elements = {
             video: document.getElementById('video'),
             toggleBtn: document.getElementById('toggle-camera'),
+            resetBtn: document.getElementById('reset-camera'),
             cameraWrapper: document.getElementById('camera-wrapper'),
             hasilDeteksi: document.getElementById('hasil-deteksi'),
             hasilConfidence: document.getElementById('hasil-confidence'),
@@ -47,6 +49,7 @@ const CameraApp = {
     // Setup event listeners
     setupEventListeners() {
         this.elements.toggleBtn.addEventListener('click', () => this.toggleCamera());
+        this.elements.resetBtn.addEventListener('click', () => this.resetModelState());
     },
 
     // Stop sending frames
@@ -99,8 +102,15 @@ const CameraApp = {
             }
 
             const data = await response.json();
+            if (this.state.isResetting || !this.state.cameraActive) {
+                return;
+            }
             this.updateUI(data);
         } catch (error) {
+            if (this.state.isResetting) {
+                return;
+            }
+
             this.updateUI({
                 label: 'Belum terhubung',
                 confidence: '-',
@@ -108,7 +118,7 @@ const CameraApp = {
             });
         } finally {
             this.state.isSendingFrame = false;
-            if (this.state.cameraActive) {
+            if (this.state.cameraActive && !this.state.isResetting) {
                 this.state.sendTimeoutId = setTimeout(() => this.sendFrameToApi(), this.config.sendIntervalMs);
             }
         }
@@ -127,6 +137,48 @@ const CameraApp = {
     startSendingFrames() {
         this.stopSendingFrames();
         this.sendFrameToApi();
+    },
+
+    // Reset the model state without stopping the camera feed
+    async resetModelState() {
+        if (this.state.isResetting) {
+            return;
+        }
+
+        this.state.isResetting = true;
+        this.stopSendingFrames();
+
+        try {
+            const response = await fetch('http://127.0.0.1:5000/reset', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            this.updateUI(data);
+
+            if (this.state.cameraActive) {
+                this.startSendingFrames();
+            }
+        } catch (error) {
+            this.updateUI({
+                label: 'Reset gagal',
+                confidence: '-',
+                mode: 'API offline',
+            });
+
+            if (this.state.cameraActive) {
+                this.startSendingFrames();
+            }
+        } finally {
+            this.state.isResetting = false;
+        }
     },
 
     // Toggle camera on/off
@@ -210,4 +262,12 @@ const CameraApp = {
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     CameraApp.init();
+
+    const cameraTips = document.getElementById('camera-tips');
+    if (cameraTips) {
+        window.requestAnimationFrame(() => {
+            cameraTips.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            cameraTips.focus({ preventScroll: true });
+        });
+    }
 });

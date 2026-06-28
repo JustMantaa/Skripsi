@@ -147,6 +147,20 @@ cached_response = None
 cache_until = 0.0
 
 
+def reset_model_state():
+    global mode, yolo_enabled, no_detection_count, sequence, hand_missing_count
+    global lstm_start_time, cached_response, cache_until
+
+    mode = "LSTM"
+    yolo_enabled = False
+    no_detection_count = 0
+    sequence = []
+    hand_missing_count = 0
+    lstm_start_time = None
+    cached_response = None
+    cache_until = 0.0
+
+
 # =====================================================
 # API ENDPOINT
 # =====================================================
@@ -295,6 +309,13 @@ def predict():
                         lstm_start_time = None
 
         return jsonify(response)
+
+
+@app.route("/reset", methods=["POST"])
+def reset():
+    with lock:
+        reset_model_state()
+        return jsonify(build_response(label=f"Collect 0/{seq_len}", confidence=0.0, mode_name=mode))
 
 
 # =====================================================

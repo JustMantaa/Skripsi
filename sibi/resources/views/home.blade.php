@@ -51,18 +51,24 @@
     }
 
     .camera-tips {
-        background: rgba(255,255,255,0.95);
-        border-top-left-radius: 12px;
-        border-top-right-radius: 12px;
-        padding: 12px 16px;
-        margin-bottom: 8px;
-        box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+        background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(245,248,255,0.98));
+        border: 1px solid rgba(49, 91, 161, 0.16);
+        border-radius: 16px;
+        padding: 18px 18px 16px;
+        margin-bottom: 14px;
+        box-shadow: 0 10px 28px rgba(16, 24, 40, 0.08);
         font-size: 15px;
-        color: #222;
+        color: #1f2937;
         display: flex;
-        align-items: center;
-        gap: 12px;
+        align-items: flex-start;
+        gap: 14px;
     }
+
+    .camera-tips:focus {
+        outline: 3px solid rgba(59, 130, 246, 0.35);
+        outline-offset: 3px;
+    }
+
     .camera-tips .tips-col-icon,
     .camera-tips .tips-col-close {
         display: flex;
@@ -75,9 +81,51 @@
         flex: 1 1 auto;
     }
 
-    .camera-tips .info-icon {
+    .camera-tips .tips-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 8px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(59, 130, 246, 0.12);
+        color: #1d4ed8;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .camera-tips .tips-heading {
+        margin: 0 0 8px;
         font-size: 18px;
+        line-height: 1.25;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .camera-tips .tips-copy {
+        margin: 0 0 10px;
+        color: #334155;
+        line-height: 1.6;
+    }
+
+    .camera-tips .tips-list {
+        margin: 0;
+        padding-left: 18px;
+        color: #334155;
+        line-height: 1.55;
+    }
+
+    .camera-tips .tips-list li + li {
+        margin-top: 4px;
+    }
+
+    .camera-tips .info-icon {
+        font-size: 20px;
         line-height: 1;
+        color: #1d4ed8;
+        margin-top: 2px;
     }
 
     .camera-tips .close-tips {
@@ -112,15 +160,15 @@
         outline: none;
     }
 
-    .camera-controls {
+    .camera-actions {
         display: flex;
         justify-content: center;
-        padding: 16px;
         gap: 12px;
-        flex-wrap: wrap;
+        padding: 16px 16px 20px;
+        flex-wrap: nowrap;
     }
 
-    .camera-controls .btn {
+    .camera-actions .btn {
         min-width: 180px;
         font-weight: 600;
         border-radius: 10px;
@@ -187,13 +235,17 @@
         font-size: 70px;
     }
 
-    .camera-controls {
+    .camera-actions {
         padding: 12px;
+        gap: 8px;
     }
 
-    .camera-controls .btn {
-        width: 100%;
-        min-width: unset;
+    .camera-actions .btn {
+        flex: 1 1 0;
+        min-width: 0;
+        width: auto;
+        padding: 8px 10px;
+        font-size: 14px;
     }
 }
 
@@ -259,12 +311,19 @@
     <div class="row mb-4 mx-0">
         <div class="col-12 col-lg-8 mx-auto p-2">
             <div>
-                <div id="camera-tips" class="camera-tips" role="region" aria-label="Tips Kamera">
+                <div id="camera-tips" class="camera-tips" role="region" aria-label="Petunjuk penggunaan kamera" tabindex="-1">
                     <div class="tips-col-icon">
                         <i class="fa-solid fa-circle-info info-icon" aria-hidden="true"></i>
                     </div>
                     <div class="tips-col-text">
-                        <p class="mb-0">Gunakan tangan kanan dan lakukan gerakan secara perlahan di depan kamera untuk memperoleh hasil deteksi yang lebih akurat. Pastikan pencahayaan cukup dan latar belakang tidak terlalu ramai. Disarankan menggunakan perangkat laptop atau PC dengan webcam agar proses deteksi dapat berjalan lebih optimal dan stabil.</p>
+                        <div class="tips-eyebrow">Petunjuk Utama</div>
+                        <h2 class="tips-heading">Baca ini dulu sebelum mulai</h2>
+                        <p class="tips-copy">Agar hasil deteksi lebih akurat, ikuti petunjuk berikut saat berada di depan kamera.</p>
+                        <ul class="tips-list">
+                            <li>Gunakan tangan kanan dan gerakkan secara perlahan.</li>
+                            <li>Pastikan pencahayaan cukup dan latar tidak terlalu ramai.</li>
+                            <li>Disarankan memakai laptop atau PC dengan webcam.</li>
+                        </ul>
                     </div>
                     <div class="tips-col-close">
                         <button class="close-tips" aria-label="Tutup tips" onclick="document.getElementById('camera-tips').style.display='none'">&times;</button>
@@ -285,8 +344,9 @@
                     <div id="video-container">
                         <video id="video" autoplay playsinline></video>
                     </div>
-                    <div class="camera-controls">
-                        <button id="toggle-camera" class="btn btn-primary">Aktifkan Kamera</button>
+                    <div class="camera-actions">
+                        <button id="toggle-camera" class="btn btn-primary" type="button">Aktifkan Kamera</button>
+                        <button id="reset-camera" class="btn btn-primary" type="button">Reset</button>
                     </div>
                 </div>
             </div>
