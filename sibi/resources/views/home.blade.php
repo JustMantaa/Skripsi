@@ -323,6 +323,7 @@
                             <li>Gunakan tangan kanan dan gerakkan secara perlahan.</li>
                             <li>Pastikan pencahayaan cukup dan latar tidak terlalu ramai.</li>
                             <li>Disarankan memakai laptop atau PC dengan webcam.</li>
+                            <li>Klik tombol "Reset" untuk mengulang deteksi.</li>
                         </ul>
                     </div>
                     <div class="tips-col-close">

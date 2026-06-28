@@ -6,8 +6,8 @@
 const CameraApp = {
     // Configuration
     config: {
-        pythonApiBaseUrl: 'http://127.0.0.1:5000/predict', //local api
-        //pythonApiBaseUrl: '/flask-api', //server api
+        // pythonApiBaseUrl: 'http://127.0.0.1:5000/predict', //local api
+        pythonApiBaseUrl: '/flask-api', //server api
         sendIntervalMs: 66,
         sendJpegQuality: 0.8,
         processWidth: 640,
